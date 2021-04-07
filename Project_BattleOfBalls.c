@@ -1,5 +1,5 @@
 /* ************************************************* Definition Area ************************************************** */
-//this is jason tring to push
+
 #define BOARD                 "DE1-SoC"
 
 /* Memory */
@@ -86,7 +86,8 @@
 #define AI_NUM 20
 
 /* ************************************************** Global Area ***************************************************** */
-#include<time.h>
+#include <time.h>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -110,6 +111,7 @@ void initial_memory_base();
 void initial_player();
 void initial_AI();
 void initial_food();
+void initial_score();
 
 void plot_game();
 void plot_food();
@@ -124,16 +126,14 @@ void video_text(int, int, char *);
 void cleartext();
 
 void update_game();
-void ball_generate();
-void food_generate();
-void ball_update();
+void player_update();
+void AI_update();
+void AIChase();
 
 void game_react();
 void playerEatFood();
 void AIEatFood();
 void playerEatAI();
-void AIMove();
-void AIChase();
 
 void close_game();
 
@@ -214,6 +214,8 @@ void initial_game(){
     initial_AI();
     
     initial_food();
+    
+    initial_score();
 }
 
 // Function 3:
@@ -284,21 +286,23 @@ void initial_food(){
         }
     }
 }
-//void initial_score(){
 
-//}
+// Function 7: Initailise score as 100
+void initial_score(){
+
+}
 
 /* ***************************************** Keyboard Input Functions Area ******************************************** */
 
-// Function 7: Press [Direction] Button to Move Balls
+// Function 8: Press [Direction] Button to Move Balls
 
-// Function 8: Press [Enter] Button to Start
+// Function 9: Press [Enter] Button to Start
 
-// Function 9: Press [Space] Button to Pause or Resume
+// Function 10: Press [Space] Button to Pause or Resume
 
 /* *************************************** Graphics Drawing Functions Area ******************************************** */
 
-// Function 10: Draw Main Function
+// Function 11: Draw Main Function
 void plot_game(){
     plot_player();
     
@@ -307,7 +311,7 @@ void plot_game(){
     plot_AI();
 }
 
-// Function 11: Plot Food
+// Function 12: Plot Food
 void plot_food(){
     for(int i = 0; i < FOOD_NUM; i++){
         if(!food[i].isEaten){
@@ -328,7 +332,7 @@ void plot_food(){
     }
 }
 
-// Function 12: Plot AI Balls
+// Function 13: Plot AI Balls
 void plot_AI(){
     for (int i = 0; i < AI_NUM; i++){
       if (!AI[i].isEaten){
@@ -350,12 +354,12 @@ void plot_AI(){
     }
 }
 
-// Function 13: Plot Player
+// Function 14: Plot Player
 void plot_player(){
     plot_circle(player);
 }
 
-// Function 14: Clear Screen
+// Function 15: Clear Screen
 void clear_screen(){
     for(int x = 0; x < RESOLUTION_X; ++x){
         for(int y = 0; y < RESOLUTION_Y; ++y){
@@ -365,13 +369,13 @@ void clear_screen(){
     }
 }
 
-// Function 15: Plot pixels
+// Function 16: Plot pixels
 void plot_pixel(int x, int y, short int color){
     if(x >= 0 && x < RESOLUTION_X && y >= 0 && y < RESOLUTION_Y)
         *(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = color;
 }
 
-// Function 16: Plot Circle
+// Function 17: Plot Circle
 void plot_circle(Ball ball){
     
     int x = ball.xLocation;
@@ -394,12 +398,11 @@ void plot_circle(Ball ball){
             d = d + 2*(count - r) + 5;
             r--;
         }
-        
         count++;
     }
 }
 
-// Function 17: Plot lines
+// Function 18: Plot lines
 void draw_line(int startX, int startY, int endX, int endY, short int color){
     bool isSteep = (ABS(endY - startY) > ABS(endX - startX));
     
@@ -449,49 +452,106 @@ void draw_line(int startX, int startY, int endX, int endY, short int color){
 
 /* *************************************** Graphics Update Functions Area ********************************************* */
 
-// Function 18: Update Main Fuction
+// Function 19: Update Main Fuction
 void update_game(){
+    AI_update();
     
+    player_update();
 }
 
-// Function 19: Balls Location Update
-void ball_update(){
-    
+// Function 20: Balls Location Update based on keyboard input
+void player_update(){
+
+}
+
+// Function 21: AI Movement
+void AI_update(){
+    for (int i = 0; i < AI_NUM; i++){
+        // check if the position is out of bounds
+        if((AI[i].xLocation - AI[i].radius) == 0){
+            AI[i].xLocation += 1;
+        }
+        
+        if((AI[i].xLocation + AI[i].radius) == RESOLUTION_X){
+            AI[i].xLocation -= 1;
+        }
+        
+        if((AI[i].yLocation - AI[i].radius) == 0){
+            AI[i].yLocation += 1;
+        }
+        
+        if((AI[i].yLocation + AI[i].radius) == RESOLUTION_Y){
+            AI[i].yLocation -= 1;
+        }
+        
+        // Initialise as max distance
+        double minDistance = RESOLUTION_X;
+     
+        // The Number of minmum ball
+        int minBall = -1;
+   
+        if(!AI[i].isEaten){
+            // AI approaches AI
+            for (int k = i + 1; k < AI_NUM; k++){
+                if (AI[i].radius > AI[k].radius && !AI[k].isEaten){
+                    // Store the Number of target ball
+                    if (findDistance(AI[i], AI[k]) < minDistance){
+                        minDistance = findDistance(AI[i], AI[k]);
+                        minBall = k;
+                    }
+                }
+            }
+        }
+        
+        // Chase
+        if ((minBall != -1)){
+            AIChase(&AI[i], &AI[minBall]);
+        }
+    }
+}
+
+// Function 22: Chase Algorithm
+void AIChase(Ball *chase, Ball *run){
+    if(rand() % 2 == 0){
+        if(chase->xLocation < run->xLocation){
+            chase->xLocation += 2;
+        } else {
+            chase->xLocation -= 2;
+        }
+    } else {
+        if (chase->yLocation < run->yLocation){
+            chase->yLocation += 2;
+        } else {
+            chase->yLocation -= 2;
+        }
+    }
 }
 
 /* ************************************** Graphics React Functions Area *********************************************** */
 
-// Function 20: Graphics React Main Function
+// Function 23: Graphics React Main Function
 void game_react(){
     
 }
 
-// Function 21: Player Eat Food
+// Function 24: Player Eat Food
 void playerEatFood(){
     
 }
 
-// Function 22: AI Eat Food
+// Function 25: AI Eat Food
 void AIEatFood(){
     
 }
 
-// Function 23: Player Eat AI or AI Eat Player
+// Function 26: Player Eat AI or AI Eat Player
 void playerEatAI(){
     
 }
 
-// Function 24: AI Movement
-void AIMove(){
-    
-}
-
-// Function 25: Chase Algorithm
-void AIChase(){
-    
-}
-
 /* ***************************************** Text Drawing Functions Area ********************************************** */
+
+// Function 27:
 void video_text(int x, int y, char * text_ptr) {
 	int offset;
 	volatile char * character_buffer =(char *)FPGA_CHAR_BASE; // video character buffer
@@ -505,6 +565,8 @@ void video_text(int x, int y, char * text_ptr) {
 }
 
 /* *************************************** Score Update Functions Area ************************************************ */
+
+// Function 28:
 void cleartext(){
 	for(int x=0;x<80;x++){
 		for(int y=0;y<60;y++){
@@ -515,19 +577,19 @@ void cleartext(){
 
 /* ******************************************* Tool Functions Area **************************************************** */
 
-// Function: Close Game Main Function
+// Function 29: Close Game Main Function
 void close_game(){
     
 }
 
 /* ******************************************* Tool Functions Area **************************************************** */
 
-// Function: Find Distance Between Balls
+// Function 30: Find Distance Between Balls
 float findDistance(Ball ball1, Ball ball2){
-    return 1;
+    return sqrt((ball1.xLocation - ball2.xLocation) * (ball1.xLocation - ball2.xLocation) + (ball1.yLocation - ball2.yLocation) * (ball1.yLocation - ball2.yLocation));
 }
 
-// Function: the ball is overlap with the player
+// Function 31: the ball is overlap with the player
 bool overlapPayer(Ball ball){
     if(((ball.xLocation - ball.radius) < (player.xLocation + player.radius)) && ((ball.xLocation + ball.radius) > (player.xLocation - player.radius))){
         if(((ball.yLocation - ball.radius) < (player.yLocation + player.radius)) && ((ball.yLocation + ball.radius) > (player.yLocation - player.radius))){
@@ -539,7 +601,7 @@ bool overlapPayer(Ball ball){
 }
 
 
-// Function : Swap
+// Function 32: Swap
 void swap(int* a, int* b){
     int temp = *a;
     *a = *b;
