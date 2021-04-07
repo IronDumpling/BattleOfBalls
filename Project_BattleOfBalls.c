@@ -83,7 +83,7 @@
 
 /* Number of Balls */
 #define FOOD_NUM 50
-#define AI_NUM 20
+#define AI_NUM 25
 
 /* ************************************************** Global Area ***************************************************** */
 #include <time.h>
@@ -98,9 +98,13 @@ typedef struct ourBall{
                      // Alive = 0
     short int color;
     int radius;
+    int score;
+    
     int xLocation;
     int yLocation;
-    int score;
+  
+    int xVelocity; // If this Ball is the minmum in the game
+    int yVelocity; // Then it move follows this velocity
 } Ball;
 
 /* Function Prototypes */
@@ -244,7 +248,7 @@ void initial_memory_base(){
 void initial_player(){
     // Initialise Player's Information
     player.color = WHITE;
-    player.radius = 10;
+    player.radius = 5;
     player.isEaten = false;
       
     // Initialise Player's Location
@@ -257,7 +261,10 @@ void initial_AI(){
     for (int i = 0; i < AI_NUM; i++){
         AI[i].color = color[rand()%9];
         AI[i].isEaten = false;
-        AI[i].radius = (int)(rand() % 10 + 10);
+        AI[i].radius = (int)(rand() % 10 + 5);
+        
+        AI[i].xVelocity = (rand()%2)*2 - 1;
+        AI[i].yVelocity = (rand()%2)*2 - 1;
         
         AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
@@ -341,6 +348,9 @@ void plot_AI(){
           AI[i].color = color[rand()%9];   //rand()%256  随机取值 0-255
           AI[i].isEaten = false;
           AI[i].radius = (int)(rand() % 10 + 10);
+          
+          AI[i].xVelocity = (rand()%2)*2 - 1;
+          AI[i].yVelocity = (rand()%2)*2 - 1;
           
           AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
@@ -470,42 +480,46 @@ void AI_update(){
         // check if the position is out of bounds
         if((AI[i].xLocation - AI[i].radius) == 0){
             AI[i].xLocation += 1;
-        }
-        
-        if((AI[i].xLocation + AI[i].radius) == RESOLUTION_X){
+            AI[i].xVelocity = - AI[i].xVelocity;
+        }else if((AI[i].xLocation + AI[i].radius) == RESOLUTION_X){
             AI[i].xLocation -= 1;
+            AI[i].xVelocity = - AI[i].xVelocity;
         }
         
         if((AI[i].yLocation - AI[i].radius) == 0){
             AI[i].yLocation += 1;
-        }
-        
-        if((AI[i].yLocation + AI[i].radius) == RESOLUTION_Y){
+            AI[i].yVelocity = - AI[i].yVelocity;
+        }else if((AI[i].yLocation + AI[i].radius) == RESOLUTION_Y){
             AI[i].yLocation -= 1;
-        }
-        
-        // Initialise as max distance
-        double minDistance = RESOLUTION_X;
-     
-        // The Number of minmum ball
-        int minBall = -1;
-   
-        if(!AI[i].isEaten){
-            // AI approaches AI
-            for (int k = i + 1; k < AI_NUM; k++){
-                if (AI[i].radius > AI[k].radius && !AI[k].isEaten){
-                    // Store the Number of target ball
-                    if (findDistance(AI[i], AI[k]) < minDistance){
-                        minDistance = findDistance(AI[i], AI[k]);
-                        minBall = k;
+            AI[i].yVelocity = - AI[i].yVelocity;
+        }else{
+            // Initialise as max distance
+            double minDistance = RESOLUTION_X;
+         
+            // The Number of minmum ball
+            int minBall = -1;
+       
+            // Find a smaller ball
+            if(!AI[i].isEaten){
+                // AI approaches AI
+                for (int k = i + 1; k < AI_NUM; k++){
+                    if (AI[i].radius > AI[k].radius && !AI[k].isEaten){
+                        // Store the Number of target ball
+                        if (findDistance(AI[i], AI[k]) < minDistance){
+                            minDistance = findDistance(AI[i], AI[k]);
+                            minBall = k;
+                        }
                     }
                 }
             }
-        }
-        
-        // Chase
-        if ((minBall != -1)){
-            AIChase(&AI[i], &AI[minBall]);
+            
+            // Chase
+            if ((minBall != -1)){
+                AIChase(&AI[i], &AI[minBall]);
+            }else{
+                AI[i].xLocation += AI[i].xVelocity;
+                AI[i].yLocation += AI[i].yVelocity;
+            }
         }
     }
 }
