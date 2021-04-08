@@ -82,8 +82,8 @@
 #define RESOLUTION_Y 240
 
 /* Number of Balls */
-#define FOOD_NUM 50
-#define AI_NUM 25
+#define FOOD_NUM 80
+#define AI_NUM 15
 
 /* ************************************************** Global Area ***************************************************** */
 #include <time.h>
@@ -160,6 +160,9 @@ Ball AI[AI_NUM];     // Ball Array of AI
 Ball food[FOOD_NUM]; // Ball Array of Food
 
 bool endGame = false;
+bool pauseGame = false;
+bool startGame = true;
+
 short int color[9] = {RED, YELLOW, GREEN, BLUE, CYAN, MAGENTA, GREY, PINK, ORANGE};
 char byte1 = 0, byte2 = 0, byte3 = 0;
 volatile int pixel_buffer_start;
@@ -171,32 +174,46 @@ volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
 // Main Function
 int main(){
     while(true){
-        // Initial Games
-        initial_game();
-    
-        // Game While Loop
-        while(!endGame){
-            // Erase any boxes and lines that were drawn in the last iteration
-            clear_screen();
         
-            // Balls Eating each other
-            game_react();
+        // code for keyboard input
+        keyboard_input();
         
-            // code for drawing the boxes and lines (not shown)
-            plot_game();
+        while(startGame){
+            // Initial Games
+            initial_game();
         
             // code for keyboard input
             keyboard_input();
-        
-            // code for updating the locations of boxes (not shown)
-            update_game();
-                
-            // code for text display
-            display_score();
-        
-            wait_for_vsync(); // swap front and back buffers on VGA vertical sync
-            pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
             
+            // Game While Loop
+            while(!endGame){
+                // Erase any boxes and lines that were drawn in the last iteration
+                clear_screen();
+            
+                // Balls Eating each other
+                game_react();
+            
+                // code for drawing the boxes and lines (not shown)
+                plot_game();
+            
+                // code for keyboard input
+                keyboard_input();
+            
+                // code for updating the locations of boxes (not shown)
+                update_game();
+                    
+                // code for text display
+                display_score();
+            
+                wait_for_vsync(); // swap front and back buffers on VGA vertical sync
+                pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+                
+                //Puase Game
+                while(pauseGame){
+                    // code for keyboard input
+                    keyboard_input();
+                }
+            }
         }
     }
     return 0;
@@ -331,22 +348,22 @@ void keyboard_input(){
         byte2 = byte3;
         byte3 = PS2_Data & 0xFF;
         
-        if((byte2 == (char)0x75) && (byte3 == (char)0xE0))
+        if((byte1 == (char)0xE0) && (byte2 == (char)0xF0) && (byte3 == (char)0x75))
             up_input();
         
-        if((byte2 == (char)0x74) && (byte3 == (char)0xE0))
+        if((byte1 == (char)0xE0) && (byte2 == (char)0xF0) && (byte3 == (char)0x74))
             right_input();
         
-        if((byte2 == (char)0x6B) && (byte3 == (char)0xE0))
+        if((byte1 == (char)0xE0) && (byte2 == (char)0xF0) && (byte3 == (char)0x6B))
             left_input();
         
-        if((byte2 == (char)0x72) && (byte3 == (char)0xE0))
+        if((byte1 == (char)0xE0) && (byte2 == (char)0xF0) && (byte3 == (char)0x72))
             down_input();
         
-        if((byte3 == (char)0x5A))
+        if((byte1 == (char)0x5A) && (byte2 == (char)0xF0) && (byte3 == (char)0x5A))
             start_input();
         
-        if((byte3 == (char)0x29))
+        if((byte1 == (char)0x29) && (byte2 == (char)0xF0) && (byte3 == (char)0x29))
             pause_input();
     }
 }
@@ -354,32 +371,33 @@ void keyboard_input(){
 // Function 8: Press [Direction] Button to Move Balls
 void up_input(){
     if(player.yLocation - player.radius > 0)
-        player.yLocation -= 1;
+        player.yLocation -= 10;
 }
 
 void right_input(){
     if(player.xLocation + player.radius < RESOLUTION_X)
-        player.yLocation += 1;
+        player.xLocation += 10;
 }
 
 void left_input(){
     if(player.xLocation - player.radius > 0)
-        player.xLocation -= 1;
+        player.xLocation -= 10;
 }
 
 void down_input(){
     if(player.yLocation + player.radius < RESOLUTION_Y)
-        player.yLocation += 1;
+        player.yLocation += 10;
 }
 
 // Function 9: Press [Enter] Button to Start
 void start_input(){
-    
+    pauseGame = false;
+    startGame = true;
 }
 
 // Function 10: Press [Space] Button to Pause or Resume
 void pause_input(){
-    
+    pauseGame = true;
 }
 
 /* *************************************** Graphics Drawing Functions Area ******************************************** */
