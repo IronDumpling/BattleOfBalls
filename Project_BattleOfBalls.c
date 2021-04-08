@@ -151,6 +151,7 @@ void close_game();
 
 float findDistance(Ball, Ball);
 bool overlapPayer(Ball);
+bool overlapAI(Ball);
 void swap(int*, int*);
 
 
@@ -161,7 +162,7 @@ Ball food[FOOD_NUM]; // Ball Array of Food
 
 bool endGame = false;
 bool pauseGame = false;
-bool startGame = true;
+bool startGame = false;
 
 short int color[9] = {RED, YELLOW, GREEN, BLUE, CYAN, MAGENTA, GREY, PINK, ORANGE};
 char byte1 = 0, byte2 = 0, byte3 = 0;
@@ -307,7 +308,7 @@ void initial_AI(){
         AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         
         // AI Balls won't over the boarder
-        while(overlapPayer(AI[i])){
+        while(overlapPayer(AI[i]) && overlapAI(AI[i])){
             AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
             AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         }
@@ -446,7 +447,7 @@ void plot_AI(){
           AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           
           // AI Balls won't over the boarder
-          while(overlapPayer(AI[i])){
+          while(overlapPayer(AI[i]) && overlapAI(AI[i])){
               AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
               AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           }
@@ -766,12 +767,22 @@ bool overlapPayer(Ball ball){
             return true;
         }
     }
-    
     return false;
 }
 
+// Function 32: New balls won't overlap with old balls
+bool overlapAI(Ball ball){
+    for(int i = 0; i < AI_NUM; i++){
+        if(((ball.xLocation - ball.radius) < (AI[i].xLocation + AI[i].radius)) && ((ball.xLocation + ball.radius) > (AI[i].xLocation - AI[i].radius))){
+            if(((ball.yLocation - ball.radius) < (AI[i].yLocation + AI[i].radius)) && ((ball.yLocation + ball.radius) > (AI[i].yLocation - AI[i].radius))){
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
-// Function 32: Swap
+// Function 33: Swap
 void swap(int* a, int* b){
     int temp = *a;
     *a = *b;
