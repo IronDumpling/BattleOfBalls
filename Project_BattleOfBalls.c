@@ -597,12 +597,12 @@ void AIEatFood(){
       // Ai eat Ai
       for (int k = i + 1; k < AI_NUM; k++){
         if (!AI[k].isEaten){
-            if (findDistance(AI[i], AI[k]) < AI[k].radius * 3/4){
+            if (findDistance(AI[i], AI[k]) < AI[k].radius - AI[i].radius/3){
             AI[i].isEaten = true;
-            AI[k].radius += AI[i].radius / 4;
-          }else if (findDistance(AI[i], AI[k]) < AI[i].radius * 3/4){
+            AI[k].radius += AI[i].radius / 5;
+          }else if (findDistance(AI[i], AI[k]) < AI[i].radius - AI[k].radius/3){
             AI[k].isEaten = true;
-            AI[i].radius += AI[k].radius / 4;
+            AI[i].radius += AI[k].radius / 5;
           }
         }
       }
