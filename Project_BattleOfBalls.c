@@ -92,7 +92,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-	
+    
 /* Type Definition of Balls */
 typedef struct ourBall{
     bool isEaten;    // Eaten/Dead = 1
@@ -116,6 +116,12 @@ void initial_food();
 void initial_score();
 
 void keyboard_input();
+void up_input();
+void right_input();
+void left_input();
+void down_input();
+void start_input();
+void pause_input();
 
 void plot_game();
 void plot_food();
@@ -153,7 +159,9 @@ Ball player;         // Ball of Player
 Ball AI[AI_NUM];     // Ball Array of AI
 Ball food[FOOD_NUM]; // Ball Array of Food
 
+bool endGame = false;
 short int color[9] = {RED, YELLOW, GREEN, BLUE, CYAN, MAGENTA, GREY, PINK, ORANGE};
+char byte1 = 0, byte2 = 0, byte3 = 0;
 volatile int pixel_buffer_start;
 volatile int * PS2_ptr = (int *)PS2_BASE;
 volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
@@ -162,37 +170,35 @@ volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
 
 // Main Function
 int main(){
-    
-    // Initial Games
-    initial_game();
-    
-    // Game While Loop
     while(true){
-        // Erase any boxes and lines that were drawn in the last iteration
-        clear_screen();
+        // Initial Games
+        initial_game();
+    
+        // Game While Loop
+        while(!endGame){
+            // Erase any boxes and lines that were drawn in the last iteration
+            clear_screen();
         
-        // Balls Eating each other
-        game_react();
+            // Balls Eating each other
+            game_react();
         
-        // code for drawing the boxes and lines (not shown)
-        plot_game();
+            // code for drawing the boxes and lines (not shown)
+            plot_game();
         
-        // code for keyboard input
-        keyboard_input();
+            // code for keyboard input
+            keyboard_input();
         
-        // code for updating the locations of boxes (not shown)
-        update_game();
+            // code for updating the locations of boxes (not shown)
+            update_game();
                 
-        // code for text display
-	display_score();
-		
-        wait_for_vsync(); // swap front and back buffers on VGA vertical sync
-        pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+            // code for text display
+            display_score();
+        
+            wait_for_vsync(); // swap front and back buffers on VGA vertical sync
+            pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+            
+        }
     }
-    
-    // Close Graphics
-    close_game();
-    
     return 0;
 }
 
@@ -217,6 +223,12 @@ void wait_for_vsync(){
 // Function 2: Initialise Game Randomly
 void initial_game(){
     initial_memory_base();
+    
+    // FIFO is Empty
+    byte1 = 0, byte2 = 0, byte3 = 0;
+    
+    // Game Not End
+    endGame = false;
     
     // Random generate seed
     srand((unsigned)time(NULL));
@@ -250,6 +262,9 @@ void initial_memory_base(){
     
     // we draw on the back buffer
     pixel_buffer_start = *(pixel_ctrl_ptr + 1);
+    
+    // Reset PS/2 Mouse
+    *PS2_ptr = 0xFF;
 }
 
 // Function 4: Random Generate Player Location
@@ -301,7 +316,7 @@ void initial_food(){
 
 // Function 7: Initailise score as 100
 void initial_score(){
-	player.score=0;
+    player.score=0;
 }
 
 /* ***************************************** Keyboard Input Functions Area ******************************************** */
@@ -312,15 +327,60 @@ void keyboard_input(){
     int ReadValid = PS2_Data & 0x8000;
     
     if(ReadValid){
+        byte1 = byte2;
+        byte2 = byte3;
+        byte3 = PS2_Data & 0xFF;
         
+        if((byte2 == (char)0x75) && (byte3 == (char)0xE0))
+            up_input();
+        
+        if((byte2 == (char)0x74) && (byte3 == (char)0xE0))
+            right_input();
+        
+        if((byte2 == (char)0x6B) && (byte3 == (char)0xE0))
+            left_input();
+        
+        if((byte2 == (char)0x72) && (byte3 == (char)0xE0))
+            down_input();
+        
+        if((byte3 == (char)0x5A))
+            start_input();
+        
+        if((byte3 == (char)0x29))
+            pause_input();
     }
 }
 
 // Function 8: Press [Direction] Button to Move Balls
+void up_input(){
+    if(player.yLocation - player.radius > 0)
+        player.yLocation -= 1;
+}
+
+void right_input(){
+    if(player.xLocation + player.radius < RESOLUTION_X)
+        player.yLocation += 1;
+}
+
+void left_input(){
+    if(player.xLocation - player.radius > 0)
+        player.xLocation -= 1;
+}
+
+void down_input(){
+    if(player.yLocation + player.radius < RESOLUTION_Y)
+        player.yLocation += 1;
+}
 
 // Function 9: Press [Enter] Button to Start
+void start_input(){
+    
+}
 
 // Function 10: Press [Space] Button to Pause or Resume
+void pause_input(){
+    
+}
 
 /* *************************************** Graphics Drawing Functions Area ******************************************** */
 
@@ -477,14 +537,13 @@ void draw_line(int startX, int startY, int endX, int endY, short int color){
 // Function 19: Update Main Fuction
 void update_game(){
     AI_update();
-    
     player_update();
-	update_score();
+    update_score();
 }
 
 // Function 20: Balls Location Update based on keyboard input
 void player_update(){
-
+    
 }
 
 // Function 21: AI Movement
@@ -613,55 +672,67 @@ void AIEatFood(){
 
 // Function 26: Player Eat AI or AI Eat Player
 void playerEatAI(){
-    
+    for (int i = 0; i < AI_NUM; i++){
+        if (AI[i].isEaten)
+            continue;
+        
+        // Player Eat AI
+        if (findDistance(AI[i], player) < player.radius - AI[i].radius/3){
+            AI[i].isEaten = true;
+            player.radius += AI[i].radius / 4;
+            break;
+        }
+        
+        // AI eat player
+        else if (findDistance(AI[i], player) < AI[i].radius - player.radius/3){
+            endGame = true;
+            break;
+        }
+    }
 }
 
 /* ***************************************** Text Drawing Functions Area ********************************************** */
 
 // Function 27:
 void video_text(int x, int y, char * text_ptr) {
-	int offset;
-	volatile char * character_buffer =(char *)FPGA_CHAR_BASE; // video character buffer
+    int offset;
+    volatile char * character_buffer =(char *)FPGA_CHAR_BASE; // video character buffer
 
-	offset = (y << 7) + x;
-	while (*(text_ptr)) {
-		*(character_buffer + offset) =*(text_ptr); // write to the character buffer
-		++text_ptr;
-		++offset;
-	}
+    offset = (y << 7) + x;
+    while (*(text_ptr)) {
+        *(character_buffer + offset) =*(text_ptr); // write to the character buffer
+        ++text_ptr;
+        ++offset;
+    }
 }
 void display_score(){
-	char str[20];
-	sprintf(str, "%d", player.score);
-	
-	char text_top_row[40] = "Battle of Balls";
-	char text_bottom_row[40] = "Score:\0";
-	strcat(text_bottom_row,str);
-    	video_text(1, 1, text_top_row);
-	video_text(1, 2, text_bottom_row);
+    char str[20];
+    sprintf(str, "%d", player.score);
+    
+    char text_top_row[40] = "Battle of Balls";
+    char text_bottom_row[40] = "Score:\0";
+    strcat(text_bottom_row,str);
+        video_text(1, 1, text_top_row);
+    video_text(1, 2, text_bottom_row);
 }
 /* *************************************** Score Update Functions Area ************************************************ */
 
 // Function 28:
 void cleartext(){
-	for(int x=0;x<80;x++){
-		for(int y=0;y<60;y++){
-			video_text(x, y, " \0");
-		}
-	}
+    for(int x=0;x<80;x++){
+        for(int y=0;y<60;y++){
+            video_text(x, y, " \0");
+        }
+    }
 }
 
 //Function 29: upadate score
 void update_score(){
-	player.score=(player.radius-5)*10;	
+    player.score=(player.radius-5)*10;
 }
 
 /* ******************************************* Tool Functions Area **************************************************** */
 
-// Function 29: Close Game Main Function
-void close_game(){
-    
-}
 
 /* ******************************************* Tool Functions Area **************************************************** */
 
