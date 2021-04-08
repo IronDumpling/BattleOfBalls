@@ -147,7 +147,8 @@ void playerEatFood();
 void AIEatFood();
 void playerEatAI();
 
-void close_game();
+void opening();
+void ending();
 
 float findDistance(Ball, Ball);
 bool overlapPayer(Ball);
@@ -215,6 +216,9 @@ int main(){
                     keyboard_input();
                 }
             }
+            
+            startGame = false;
+            // ending();
         }
     }
     return 0;
@@ -258,6 +262,8 @@ void initial_game(){
     initial_food();
     
     initial_score();
+    
+    opening();
 }
 
 // Function 3:
@@ -750,8 +756,53 @@ void update_score(){
     player.score=(player.radius-5)*10;
 }
 
-/* ******************************************* Tool Functions Area **************************************************** */
+/* ******************************************* Open Scene & Ending Ssene Functions Area ******************************************* */
 
+// Function 30: Open Scene
+void opening(){
+    
+    int x = RESOLUTION_X/2;
+    int y = RESOLUTION_Y/2;
+    short int color = WHITE;
+    
+    for(int r = RESOLUTION_X*2/3; r > 5; r--){
+        int count = 0;
+        int d = 1-r;
+        
+        while(r > count){
+            draw_line(-count+x, r+y, count+x, r+y, color);
+            draw_line(-r+x, count+y, r+x, count+y, color);
+            draw_line(-count+x, -r+y, count+x, -r+y,  color);
+            draw_line(-r+x, -count+y, r+x, -count+y,  color);
+            
+            if(d < 0){
+                d = d + 2*count + 3;
+            }else{
+                d = d + 2*(count - r) + 5;
+                r--;
+            }
+            count++;
+        }
+        
+        wait_for_vsync(); // swap front and back buffers on VGA vertical sync
+        pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+        
+        // Erase any boxes and lines that were drawn in the last iteration
+        clear_screen();
+    }
+}
+
+// Function 31: Ending Scene
+void ending(){
+    for(int r = player.radius; r < RESOLUTION_X*2/3 ; r++){
+        for(int x = 0; x < RESOLUTION_X; ++x){
+            for(int y = 0; y < RESOLUTION_Y; ++y){
+                if(*(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) != WHITE)
+                    plot_pixel(x, y, WHITE);
+            }
+        }
+    }
+}
 
 /* ******************************************* Tool Functions Area **************************************************** */
 
