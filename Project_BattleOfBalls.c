@@ -91,6 +91,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 	
 /* Type Definition of Balls */
 typedef struct ourBall{
@@ -127,6 +128,8 @@ void draw_line(int, int, int, int, short int);
 
 void video_text(int, int, char *);
 void cleartext();
+void display_score();
+void update_score();
 
 void update_game();
 void player_update();
@@ -181,10 +184,7 @@ int main(){
         update_game();
                 
         // code for text display
-        char text_top_row[40] = "Battle of Balls";
-		char text_bottom_row[40] = "Score:\0";
-        video_text(1, 1, text_top_row);
-		video_text(1, 2, text_bottom_row);
+	display_score();
 		
         wait_for_vsync(); // swap front and back buffers on VGA vertical sync
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -258,7 +258,7 @@ void initial_player(){
     player.color = WHITE;
     player.radius = 5;
     player.isEaten = false;
-      
+    
     // Initialise Player's Location
     player.xLocation = RESOLUTION_X/2;
     player.yLocation = RESOLUTION_Y/2;
@@ -301,7 +301,7 @@ void initial_food(){
 
 // Function 7: Initailise score as 100
 void initial_score(){
-
+	player.score=0;
 }
 
 /* ***************************************** Keyboard Input Functions Area ******************************************** */
@@ -479,6 +479,7 @@ void update_game(){
     AI_update();
     
     player_update();
+	update_score();
 }
 
 // Function 20: Balls Location Update based on keyboard input
@@ -629,7 +630,16 @@ void video_text(int x, int y, char * text_ptr) {
 		++offset;
 	}
 }
-
+void display_score(){
+	char str[20];
+	sprintf(str, "%d", player.score);
+	
+	char text_top_row[40] = "Battle of Balls";
+	char text_bottom_row[40] = "Score:\0";
+	strcat(text_bottom_row,str);
+    	video_text(1, 1, text_top_row);
+	video_text(1, 2, text_bottom_row);
+}
 /* *************************************** Score Update Functions Area ************************************************ */
 
 // Function 28:
@@ -639,6 +649,11 @@ void cleartext(){
 			video_text(x, y, " \0");
 		}
 	}
+}
+
+//Function 29: upadate score
+void update_score(){
+	player.score=(player.radius-5)*10;	
 }
 
 /* ******************************************* Tool Functions Area **************************************************** */
