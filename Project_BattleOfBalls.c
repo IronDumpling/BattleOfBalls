@@ -102,9 +102,6 @@ typedef struct ourBall{
     
     int xLocation;
     int yLocation;
-  
-    int xVelocity; // If this Ball is the minmum in the game
-    int yVelocity; // Then it move follows this velocity
 } Ball;
 
 /* Function Prototypes */
@@ -116,6 +113,8 @@ void initial_player();
 void initial_AI();
 void initial_food();
 void initial_score();
+
+void keyboard_input();
 
 void plot_game();
 void plot_food();
@@ -150,8 +149,10 @@ void swap(int*, int*);
 Ball player;         // Ball of Player
 Ball AI[AI_NUM];     // Ball Array of AI
 Ball food[FOOD_NUM]; // Ball Array of Food
+
 short int color[9] = {RED, YELLOW, GREEN, BLUE, CYAN, MAGENTA, GREY, PINK, ORANGE};
-volatile int pixel_buffer_start; 
+volatile int pixel_buffer_start;
+volatile int * PS2_ptr = (int *)PS2_BASE;
 volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
 
 /* ********************************************* Main Function Area *************************************************** */
@@ -164,15 +165,22 @@ int main(){
     
     // Game While Loop
     while(true){
-        /* Erase any boxes and lines that were drawn in the last iteration */
+        // Erase any boxes and lines that were drawn in the last iteration
         clear_screen();
         
-        // code for updating the locations of boxes (not shown)
-        update_game();
+        // Balls Eating each other
+        game_react();
         
         // code for drawing the boxes and lines (not shown)
         plot_game();
+        
+        // code for keyboard input
+        keyboard_input();
+        
+        // code for updating the locations of boxes (not shown)
+        update_game();
                 
+        // code for text display
         char text_top_row[40] = "Battle of Balls";
 		char text_bottom_row[40] = "Score:\0";
         video_text(1, 1, text_top_row);
@@ -263,9 +271,6 @@ void initial_AI(){
         AI[i].isEaten = false;
         AI[i].radius = (int)(rand() % 10 + 5);
         
-        AI[i].xVelocity = (rand()%2)*2 - 1;
-        AI[i].yVelocity = (rand()%2)*2 - 1;
-        
         AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         
@@ -300,6 +305,16 @@ void initial_score(){
 }
 
 /* ***************************************** Keyboard Input Functions Area ******************************************** */
+
+// Function 8: PS/2 Port Input Main Function
+void keyboard_input(){
+    int PS2_Data = *(PS2_ptr);
+    int ReadValid = PS2_Data & 0x8000;
+    
+    if(ReadValid){
+        
+    }
+}
 
 // Function 8: Press [Direction] Button to Move Balls
 
@@ -348,10 +363,7 @@ void plot_AI(){
           AI[i].color = color[rand()%9];   //rand()%256  随机取值 0-255
           AI[i].isEaten = false;
           AI[i].radius = (int)(rand() % 10 + 10);
-          
-          AI[i].xVelocity = (rand()%2)*2 - 1;
-          AI[i].yVelocity = (rand()%2)*2 - 1;
-          
+
           AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           
@@ -480,24 +492,22 @@ void AI_update(){
         // check if the position is out of bounds
         if((AI[i].xLocation - AI[i].radius) == 0){
             AI[i].xLocation += 1;
-            AI[i].xVelocity = - AI[i].xVelocity;
         }else if((AI[i].xLocation + AI[i].radius) == RESOLUTION_X){
             AI[i].xLocation -= 1;
-            AI[i].xVelocity = - AI[i].xVelocity;
         }
         
         if((AI[i].yLocation - AI[i].radius) == 0){
             AI[i].yLocation += 1;
-            AI[i].yVelocity = - AI[i].yVelocity;
         }else if((AI[i].yLocation + AI[i].radius) == RESOLUTION_Y){
             AI[i].yLocation -= 1;
-            AI[i].yVelocity = - AI[i].yVelocity;
         }else{
             // Initialise as max distance
-            double minDistance = RESOLUTION_X;
-         
+            double minDistanceBall = RESOLUTION_X;
+            double minDistanceFood = RESOLUTION_X;
+            
             // The Number of minmum ball
             int minBall = -1;
+            int minFood = -1;
        
             // Find a smaller ball
             if(!AI[i].isEaten){
@@ -505,9 +515,20 @@ void AI_update(){
                 for (int k = i + 1; k < AI_NUM; k++){
                     if (AI[i].radius > AI[k].radius && !AI[k].isEaten){
                         // Store the Number of target ball
-                        if (findDistance(AI[i], AI[k]) < minDistance){
-                            minDistance = findDistance(AI[i], AI[k]);
+                        if (findDistance(AI[i], AI[k]) < minDistanceBall){
+                            minDistanceBall = findDistance(AI[i], AI[k]);
                             minBall = k;
+                        }
+                    }
+                }
+                
+                // AI approaches AI
+                for (int k = i + 1; k < FOOD_NUM; k++){
+                    if (minBall == -1 && !food[k].isEaten){
+                        // Store the Number of target ball
+                        if (findDistance(AI[i], food[k]) < minDistanceFood){
+                            minDistanceFood = findDistance(AI[i], food[k]);
+                            minFood = k;
                         }
                     }
                 }
@@ -517,8 +538,7 @@ void AI_update(){
             if ((minBall != -1)){
                 AIChase(&AI[i], &AI[minBall]);
             }else{
-                AI[i].xLocation += AI[i].xVelocity;
-                AI[i].yLocation += AI[i].yVelocity;
+                AIChase(&AI[i], &food[minFood]);
             }
         }
     }
@@ -545,17 +565,49 @@ void AIChase(Ball *chase, Ball *run){
 
 // Function 23: Graphics React Main Function
 void game_react(){
-    
+    playerEatFood();
+    AIEatFood();
+    playerEatAI();
 }
 
 // Function 24: Player Eat Food
 void playerEatFood(){
-    
+    for (int i = 0; i < FOOD_NUM; i++){
+      if (!food[i].isEaten && findDistance(food[i], player) < player.radius){
+        food[i].isEaten = true;
+        player.radius += food[i].radius;
+      }
+    }
 }
 
-// Function 25: AI Eat Food
+// Function 25: AI Eat Food & AI
 void AIEatFood(){
-    
+    for (int i = 0; i < AI_NUM; i++){
+      if (AI[i].isEaten)
+        continue;
+        
+      // AI eat food
+      for (int j = 0; j < FOOD_NUM; j++){
+        if (!food[j].isEaten && findDistance(AI[i], food[j]) < AI[i].radius){
+          food[j].isEaten = true;
+          AI[i].radius += food[i].radius;
+        }
+      }
+        
+      // Ai eat Ai
+      for (int k = i + 1; k < AI_NUM; k++){
+        if (!AI[k].isEaten){
+            if (findDistance(AI[i], AI[k]) < AI[k].radius * 3/4){
+            AI[i].isEaten = true;
+            AI[k].radius += AI[i].radius / 4;
+          }else if (findDistance(AI[i], AI[k]) < AI[i].radius * 3/4){
+            AI[k].isEaten = true;
+            AI[i].radius += AI[k].radius / 4;
+          }
+        }
+      }
+        
+    }
 }
 
 // Function 26: Player Eat AI or AI Eat Player
