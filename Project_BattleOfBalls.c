@@ -164,6 +164,7 @@ Ball food[FOOD_NUM]; // Ball Array of Food
 bool endGame = false;
 bool pauseGame = false;
 bool startGame = false;
+bool restartGame = false;
 
 short int color[9] = {RED, YELLOW, GREEN, BLUE, CYAN, MAGENTA, GREY, PINK, ORANGE};
 char byte1 = 0, byte2 = 0, byte3 = 0;
@@ -180,14 +181,19 @@ int main(){
         // code for keyboard input
         keyboard_input();
         
+        // Start Menu
+        
+        // Press [Enter] to Enter the whole Game
         while(startGame){
+            
+            
             // Initial Games
             initial_game();
-        
             // code for keyboard input
             keyboard_input();
             
-            // Game While Loop
+            // Start one round Game
+            // Game won't stop until player is eaten
             while(!endGame){
                 // Erase any boxes and lines that were drawn in the last iteration
                 clear_screen();
@@ -210,15 +216,22 @@ int main(){
                 wait_for_vsync(); // swap front and back buffers on VGA vertical sync
                 pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
                 
-                //Puase Game
+                // Press [Space] to Puase Game
+                // Press [Enter] to Resume Game
                 while(pauseGame){
                     // code for keyboard input
                     keyboard_input();
+                    // Pause Menu
                 }
             }
             
+            restartGame = false;
             startGame = false;
             // ending();
+            // Press [Enter] to Restart
+            //while(!restartGame){
+                // Ending Menu
+            //}
         }
     }
     return 0;
@@ -400,6 +413,7 @@ void down_input(){
 void start_input(){
     pauseGame = false;
     startGame = true;
+    restartGame = true;
 }
 
 // Function 10: Press [Space] Button to Pause or Resume
