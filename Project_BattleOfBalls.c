@@ -82,8 +82,8 @@
 #define RESOLUTION_Y 240
 
 /* Number of Balls */
-#define FOOD_NUM 80
-#define AI_NUM 15
+#define FOOD_NUM 50
+#define AI_NUM 10
 
 /* ************************************************** Global Area ***************************************************** */
 #include <time.h>
@@ -246,6 +246,11 @@ int main(){
                     }
                     cleartext();
                 }
+                
+                // Player win the Game
+                if(player.radius >= RESOLUTION_Y/2)
+                    endGame = true;
+                
             }// One Round Game Finished
             
             restartGame = false;
@@ -423,23 +428,59 @@ void keyboard_input(){
 
 // Function 8: Press [Direction] Button to Move Balls
 void up_input(){
+    double speed = 75/(player.radius);
+    if(player.radius > 10) speed = 7;
+    if(player.radius > 20) speed = 6;
+    if(player.radius > 30) speed = 5;
+    if(player.radius > 40) speed = 4;
+    if(player.radius > 50) speed = 3;
+    if(player.radius > 60) speed = 2;
+    if(player.radius > 70) speed = 1;
+    
     if(player.yLocation - player.radius > 0)
-        player.yLocation -= 10;
+        player.yLocation -= speed;
 }
 
 void right_input(){
+     double speed = 75/(player.radius);
+    if(player.radius > 10) speed = 7;
+    if(player.radius > 20) speed = 6;
+    if(player.radius > 30) speed = 5;
+    if(player.radius > 40) speed = 4;
+    if(player.radius > 50) speed = 3;
+    if(player.radius > 60) speed = 2;
+    if(player.radius > 70) speed = 1;
+    
     if(player.xLocation + player.radius < RESOLUTION_X)
-        player.xLocation += 10;
+        player.xLocation += speed;
 }
 
 void left_input(){
+    double speed = 75/(player.radius);
+    if(player.radius > 10) speed = 7;
+    if(player.radius > 20) speed = 6;
+    if(player.radius > 30) speed = 5;
+    if(player.radius > 40) speed = 4;
+    if(player.radius > 50) speed = 3;
+    if(player.radius > 60) speed = 2;
+    if(player.radius > 70) speed = 1;
+    
     if(player.xLocation - player.radius > 0)
-        player.xLocation -= 10;
+        player.xLocation -= speed;
 }
 
 void down_input(){
+    double speed = 75/(player.radius);
+    if(player.radius > 10) speed = 7;
+    if(player.radius > 20) speed = 6;
+    if(player.radius > 30) speed = 5;
+    if(player.radius > 40) speed = 4;
+    if(player.radius > 50) speed = 3;
+    if(player.radius > 60) speed = 2;
+    if(player.radius > 70) speed = 1;
+    
     if(player.yLocation + player.radius < RESOLUTION_Y)
-        player.yLocation += 10;
+        player.yLocation += speed;
 }
 
 // Function 9: Press [Enter] Button to Start
@@ -687,17 +728,25 @@ void AI_update(){
 
 // Function 22: Chase Algorithm
 void AIChase(Ball *chase, Ball *run){
-    if(rand() % 2 == 0){
-        if(chase->xLocation < run->xLocation){
-            chase->xLocation += 2;
+    
+    int N = (chase->radius)/25;
+    double speed = 25 / (chase->radius);
+    
+    if(speed < 1) speed = 1;
+    
+    if(rand() % N == 0 || N < 1){
+        if(rand() % 2 == 0){
+            if(chase->xLocation < run->xLocation){
+                chase->xLocation += speed;
+            } else {
+                chase->xLocation -= speed;
+            }
         } else {
-            chase->xLocation -= 2;
-        }
-    } else {
-        if (chase->yLocation < run->yLocation){
-            chase->yLocation += 2;
-        } else {
-            chase->yLocation -= 2;
+            if (chase->yLocation < run->yLocation){
+                chase->yLocation += speed;
+            } else {
+                chase->yLocation -= speed;
+            }
         }
     }
 }
@@ -747,7 +796,6 @@ void AIEatFood(){
           }
         }
       }
-        
     }
 }
 
@@ -840,7 +888,7 @@ void opening(){
     short int color = WHITE;
     
     // Draw Circles
-    for(int r = RESOLUTION_X * 2/3; r > 5; r--){
+    for(int r = RESOLUTION_X/2; r > 5; r--){
         int count = 0;
         int d = 1-r;
         
