@@ -136,7 +136,9 @@ void video_text(int, int, char *);
 void cleartext();
 void display_score();
 void update_score();
-
+void display_menutext();
+void draw_pic();
+void display_pausetext();
 void update_game();
 void player_update();
 void AI_update();
@@ -177,16 +179,17 @@ volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
 // Main Function
 int main(){
     while(true){
-        
+		//draw_pic();
+       	display_menutext();
         // code for keyboard input
         keyboard_input();
         
         // Start Menu
-        
+		
         // Press [Enter] to Enter the whole Game
         while(startGame){
             
-            
+            cleartext();
             // Initial Games
             initial_game();
             // code for keyboard input
@@ -220,9 +223,15 @@ int main(){
                 // Press [Enter] to Resume Game
                 while(pauseGame){
                     // code for keyboard input
-                    keyboard_input();
+					cleartext();
+					while(pauseGame){
+						display_pausetext();
+                    	keyboard_input();
                     // Pause Menu
+					}
+					cleartext();
                 }
+				
             }
             
             restartGame = false;
@@ -748,12 +757,31 @@ void display_score(){
     char str[20];
     sprintf(str, "%d", player.score);
     
-    char text_top_row[40] = "Battle of Balls";
-    char text_bottom_row[40] = "Score:\0";
-    strcat(text_bottom_row,str);
-        video_text(1, 1, text_top_row);
-    video_text(1, 2, text_bottom_row);
+    char text_top_left_first[40] = "Battle of Balls";
+    char text_top_left_second[40] = "Score:\0";
+	char text_bottom_middle[40] = "PRESS SPACE TO PAUSE\0";
+    strcat(text_top_left_second,str);
+    video_text(1, 1, text_top_left_first);
+    video_text(1, 3, text_top_left_second);
+	video_text(30, 58, text_bottom_middle);
 }
+
+void display_menutext(){
+		char text_top_row[40] = "BATTLE OF BALLS\0";//15
+		char text_middle_row[40] = "NOTE:WHITE BALLS IS PLAYER\0";//26
+		char text_bottom_row[40] = "PRESS ENTER TO START\0";//20
+		
+        video_text(33, 29, text_top_row);
+		
+		video_text(27, 31, text_middle_row);
+		video_text(30, 50, text_bottom_row);
+}
+
+void display_pausetext(){
+	char pause_text_bottom_row[40] = "PRESS ENTER TO RESUME\0";
+	video_text(30, 31, pause_text_bottom_row);
+}
+
 /* *************************************** Score Update Functions Area ************************************************ */
 
 // Function 28:
