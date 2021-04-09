@@ -128,6 +128,7 @@ void plot_food();
 void plot_AI();
 void plot_player();
 void clear_screen();
+void menu_screen();
 void plot_pixel(int, int, short int);
 void plot_circle(Ball);
 void draw_line(int, int, int, int, short int);
@@ -179,13 +180,27 @@ volatile int * pixel_ctrl_ptr = (int *)PIXEL_BUF_CTRL_BASE;
 // Main Function
 int main(){
     while(true){
-		//draw_pic();
-       	display_menutext();
-        // code for keyboard input
-        keyboard_input();
+        // Initialise Memory Base
+        initial_memory_base();
         
         // Start Menu
-		
+        while(!startGame){
+            //draw_pic(); 用load PNG换一个黑色字体
+            display_menutext();
+            
+            // Ending Menu
+            menu_screen();
+            
+            wait_for_vsync(); // swap front and back buffers on VGA vertical sync
+            pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+            
+            // Erase any boxes and lines that were drawn in the last iteration
+            clear_screen();
+            
+            // code for keyboard input
+            keyboard_input();
+        }
+
         // Press [Enter] to Enter the whole Game
         while(startGame){
             
@@ -223,26 +238,36 @@ int main(){
                 // Press [Enter] to Resume Game
                 while(pauseGame){
                     // code for keyboard input
-					cleartext();
-					while(pauseGame){
-						display_pausetext();
-                    	keyboard_input();
-                    // Pause Menu
-					}
-					cleartext();
+                    cleartext();
+                    while(pauseGame){
+                        // Pause Menu 三角符号
+                        display_pausetext();
+                        keyboard_input();
+                    }
+                    cleartext();
                 }
-				
-            }
+            }// One Round Game Finished
             
             restartGame = false;
-            startGame = false;
-            // ending();
+            
             // Press [Enter] to Restart
-            //while(!restartGame){
-                // Ending Menu
-            //}
-        }
+            while(!restartGame){
+                // Ending Menu 加上黑色字PNG
+                menu_screen();
+                
+                wait_for_vsync(); // swap front and back buffers on VGA vertical sync
+                pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
+                
+                // Erase any boxes and lines that were drawn in the last iteration
+                clear_screen();
+                
+                // code for keyboard input
+                keyboard_input();
+            }
+            
+        }// Whole Game Ended
     }
+    
     return 0;
 }
 
@@ -266,8 +291,6 @@ void wait_for_vsync(){
 
 // Function 2: Initialise Game Randomly
 void initial_game(){
-    initial_memory_base();
-    
     // FIFO is Empty
     byte1 = 0, byte2 = 0, byte3 = 0;
     
@@ -285,6 +308,7 @@ void initial_game(){
     
     initial_score();
     
+    // Opening Animation
     opening();
 }
 
@@ -499,6 +523,16 @@ void clear_screen(){
     }
 }
 
+// Function 15: Clear Screen
+void menu_screen(){
+    for(int x = 0; x < RESOLUTION_X; ++x){
+        for(int y = 0; y < RESOLUTION_Y; ++y){
+            if(*(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) != WHITE)
+                plot_pixel(x, y, WHITE);
+        }
+    }
+}
+
 // Function 16: Plot pixels
 void plot_pixel(int x, int y, short int color){
     if(x >= 0 && x < RESOLUTION_X && y >= 0 && y < RESOLUTION_Y)
@@ -507,7 +541,6 @@ void plot_pixel(int x, int y, short int color){
 
 // Function 17: Plot Circle
 void plot_circle(Ball ball){
-    
     int x = ball.xLocation;
     int y = ball.yLocation;
     int r = ball.radius;
@@ -519,8 +552,8 @@ void plot_circle(Ball ball){
     while(r > count){
         draw_line(-count+x, r+y, count+x, r+y, color);
         draw_line(-r+x, count+y, r+x, count+y, color);
-        draw_line(-count+x, -r+y, count+x, -r+y,  color);
-        draw_line(-r+x, -count+y, r+x, -count+y,  color);
+        draw_line(-count+x, -r+y, count+x, -r+y, color);
+        draw_line(-r+x, -count+y, r+x, -count+y, color);
         
         if(d < 0){
             d = d + 2*count + 3;
@@ -759,27 +792,27 @@ void display_score(){
     
     char text_top_left_first[40] = "Battle of Balls";
     char text_top_left_second[40] = "Score:\0";
-	char text_bottom_middle[40] = "PRESS SPACE TO PAUSE\0";
+    char text_bottom_middle[40] = "PRESS SPACE TO PAUSE\0";
     strcat(text_top_left_second,str);
     video_text(1, 1, text_top_left_first);
     video_text(1, 3, text_top_left_second);
-	video_text(30, 58, text_bottom_middle);
+    video_text(30, 58, text_bottom_middle);
 }
 
 void display_menutext(){
-		char text_top_row[40] = "BATTLE OF BALLS\0";//15
-		char text_middle_row[40] = "NOTE:WHITE BALLS IS PLAYER\0";//26
-		char text_bottom_row[40] = "PRESS ENTER TO START\0";//20
-		
+        char text_top_row[40] = "BATTLE OF BALLS\0";//15
+        char text_middle_row[40] = "NOTE:WHITE BALLS IS PLAYER\0";//26
+        char text_bottom_row[40] = "PRESS ENTER TO START\0";//20
+        
         video_text(33, 29, text_top_row);
-		
-		video_text(27, 31, text_middle_row);
-		video_text(30, 50, text_bottom_row);
+        
+        video_text(27, 31, text_middle_row);
+        video_text(30, 50, text_bottom_row);
 }
 
 void display_pausetext(){
-	char pause_text_bottom_row[40] = "PRESS ENTER TO RESUME\0";
-	video_text(30, 31, pause_text_bottom_row);
+    char pause_text_bottom_row[40] = "PRESS ENTER TO RESUME\0";
+    video_text(30, 31, pause_text_bottom_row);
 }
 
 /* *************************************** Score Update Functions Area ************************************************ */
@@ -802,20 +835,20 @@ void update_score(){
 
 // Function 30: Open Scene
 void opening(){
-    
     int x = RESOLUTION_X/2;
     int y = RESOLUTION_Y/2;
     short int color = WHITE;
     
-    for(int r = RESOLUTION_X*2/3; r > 5; r--){
+    // Draw Circles
+    for(int r = RESOLUTION_X * 2/3; r > 5; r--){
         int count = 0;
         int d = 1-r;
         
         while(r > count){
             draw_line(-count+x, r+y, count+x, r+y, color);
             draw_line(-r+x, count+y, r+x, count+y, color);
-            draw_line(-count+x, -r+y, count+x, -r+y,  color);
-            draw_line(-r+x, -count+y, r+x, -count+y,  color);
+            draw_line(-count+x, -r+y, count+x, -r+y, color);
+            draw_line(-r+x, -count+y, r+x, -count+y, color);
             
             if(d < 0){
                 d = d + 2*count + 3;
@@ -831,18 +864,6 @@ void opening(){
         
         // Erase any boxes and lines that were drawn in the last iteration
         clear_screen();
-    }
-}
-
-// Function 31: Ending Scene
-void ending(){
-    for(int r = player.radius; r < RESOLUTION_X*2/3 ; r++){
-        for(int x = 0; x < RESOLUTION_X; ++x){
-            for(int y = 0; y < RESOLUTION_Y; ++y){
-                if(*(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) != WHITE)
-                    plot_pixel(x, y, WHITE);
-            }
-        }
     }
 }
 
