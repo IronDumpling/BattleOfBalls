@@ -103,6 +103,9 @@ typedef struct ourBall{
     
     int xLocation;
     int yLocation;
+    
+    int lastXLocation;
+    int lastYLocation;
 } Ball;
 
 /* Function Prototypes */
@@ -140,8 +143,8 @@ void update_score();
 void display_menutext();
 void draw_pic();
 void display_pausetext();
+
 void update_game();
-void player_update();
 void AI_update();
 void AIChase();
 
@@ -154,6 +157,7 @@ void opening();
 void ending();
 
 float findDistance(Ball, Ball);
+float findDistanceForPlayer(Ball, int, int);
 bool overlapPayer(Ball);
 bool overlapAI(Ball);
 void swap(int*, int*);
@@ -352,6 +356,8 @@ void initial_player(){
     // Initialise Player's Location
     player.xLocation = RESOLUTION_X/2;
     player.yLocation = RESOLUTION_Y/2;
+    player.lastXLocation = RESOLUTION_X/2;
+    player.lastYLocation = RESOLUTION_Y/2;
 }
 
 // Function 5: Random Generate AI Balls
@@ -428,59 +434,55 @@ void keyboard_input(){
 
 // Function 8: Press [Direction] Button to Move Balls
 void up_input(){
-    double speed = 75/(player.radius);
-    if(player.radius > 10) speed = 7;
-    if(player.radius > 20) speed = 6;
-    if(player.radius > 30) speed = 5;
-    if(player.radius > 40) speed = 4;
-    if(player.radius > 50) speed = 3;
-    if(player.radius > 60) speed = 2;
-    if(player.radius > 70) speed = 1;
+    double speed = 80/(player.radius);
+    if(player.radius > 10) speed = 8;
+    if(player.radius > 40) speed = 6;
+    if(player.radius > 60) speed = 4;
+    if(player.radius > 80) speed = 2;
     
-    if(player.yLocation - player.radius > 0)
+    if(player.yLocation - player.radius > 0){
+        player.lastYLocation = player.yLocation;
         player.yLocation -= speed;
+    }
 }
 
 void right_input(){
-     double speed = 75/(player.radius);
-    if(player.radius > 10) speed = 7;
-    if(player.radius > 20) speed = 6;
-    if(player.radius > 30) speed = 5;
-    if(player.radius > 40) speed = 4;
-    if(player.radius > 50) speed = 3;
-    if(player.radius > 60) speed = 2;
-    if(player.radius > 70) speed = 1;
+     double speed = 80/(player.radius);
+    if(player.radius > 10) speed = 8;
+    if(player.radius > 40) speed = 6;
+    if(player.radius > 60) speed = 4;
+    if(player.radius > 80) speed = 2;
     
-    if(player.xLocation + player.radius < RESOLUTION_X)
+    if(player.xLocation + player.radius < RESOLUTION_X){
+        player.lastXLocation = player.xLocation;
         player.xLocation += speed;
+    }
 }
 
 void left_input(){
-    double speed = 75/(player.radius);
-    if(player.radius > 10) speed = 7;
-    if(player.radius > 20) speed = 6;
-    if(player.radius > 30) speed = 5;
-    if(player.radius > 40) speed = 4;
-    if(player.radius > 50) speed = 3;
-    if(player.radius > 60) speed = 2;
-    if(player.radius > 70) speed = 1;
+    double speed = 80/(player.radius);
+    if(player.radius > 10) speed = 8;
+    if(player.radius > 40) speed = 6;
+    if(player.radius > 60) speed = 4;
+    if(player.radius > 80) speed = 2;
     
-    if(player.xLocation - player.radius > 0)
+    if(player.xLocation - player.radius > 0){
+        player.lastXLocation = player.xLocation;
         player.xLocation -= speed;
+    }
 }
 
 void down_input(){
-    double speed = 75/(player.radius);
-    if(player.radius > 10) speed = 7;
-    if(player.radius > 20) speed = 6;
-    if(player.radius > 30) speed = 5;
-    if(player.radius > 40) speed = 4;
-    if(player.radius > 50) speed = 3;
-    if(player.radius > 60) speed = 2;
-    if(player.radius > 70) speed = 1;
+    double speed = 80/(player.radius);
+    if(player.radius > 10) speed = 8;
+    if(player.radius > 40) speed = 6;
+    if(player.radius > 60) speed = 4;
+    if(player.radius > 80) speed = 2;
     
-    if(player.yLocation + player.radius < RESOLUTION_Y)
+    if(player.yLocation + player.radius < RESOLUTION_Y){
+        player.lastYLocation = player.yLocation;
         player.yLocation += speed;
+    }
 }
 
 // Function 9: Press [Enter] Button to Start
@@ -659,13 +661,7 @@ void draw_line(int startX, int startY, int endX, int endY, short int color){
 // Function 19: Update Main Fuction
 void update_game(){
     AI_update();
-    player_update();
     update_score();
-}
-
-// Function 20: Balls Location Update based on keyboard input
-void player_update(){
-    
 }
 
 // Function 21: AI Movement
@@ -763,10 +759,23 @@ void game_react(){
 // Function 24: Player Eat Food
 void playerEatFood(){
     for (int i = 0; i < FOOD_NUM; i++){
-      if (!food[i].isEaten && findDistance(food[i], player) < player.radius){
-        food[i].isEaten = true;
-        player.radius += food[i].radius;
-      }
+        if (!food[i].isEaten){
+            
+            if(player.xLocation != player.lastXLocation){
+                int midPoint = (player.xLocation + player.lastXLocation) / 2;
+                if((findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 1)) || (findDistanceForPlayer(food[i], midPoint, player.yLocation) < (player.radius + 1)) ){
+                        food[i].isEaten = true;
+                        player.radius += food[i].radius;
+                }
+            }else if(player.yLocation != player.lastYLocation){
+                int midPoint = (player.yLocation + player.lastYLocation) / 2;
+                if( (findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 1)) || (findDistanceForPlayer(food[i], player.xLocation, midPoint) < (player.radius + 1)) ){
+                        food[i].isEaten = true;
+                        player.radius += food[i].radius;
+                }
+            }
+
+        }
     }
 }
 
@@ -778,10 +787,10 @@ void AIEatFood(){
         
       // AI eat food
       for (int j = 0; j < FOOD_NUM; j++){
-        if (!food[j].isEaten && findDistance(AI[i], food[j]) < AI[i].radius){
-          food[j].isEaten = true;
-          AI[i].radius += food[i].radius;
-        }
+          if (!food[j].isEaten && findDistance(AI[i], food[j]) < AI[i].radius){
+            food[j].isEaten = true;
+            AI[i].radius += food[i].radius;
+          }
       }
         
       // Ai eat Ai
@@ -920,6 +929,10 @@ void opening(){
 // Function 30: Find Distance Between Balls
 float findDistance(Ball ball1, Ball ball2){
     return sqrt((ball1.xLocation - ball2.xLocation) * (ball1.xLocation - ball2.xLocation) + (ball1.yLocation - ball2.yLocation) * (ball1.yLocation - ball2.yLocation));
+}
+
+float findDistanceForPlayer(Ball ball1, int xLocation, int yLocation){
+    return sqrt((xLocation - ball1.xLocation) * (xLocation - ball1.xLocation) + (yLocation - ball1.yLocation) * (yLocation - ball1.yLocation));
 }
 
 // Function 31: the ball is overlap with the player
