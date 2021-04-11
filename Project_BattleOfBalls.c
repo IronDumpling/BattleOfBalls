@@ -162,7 +162,7 @@ void ending();
 
 float findDistance(Ball, Ball);
 float findDistanceForPlayer(Ball, int, int);
-bool overlapPayer(Ball);
+bool overlapPlayer(Ball);
 bool overlapAI(Ball);
 void swap(int*, int*);
 
@@ -668,13 +668,13 @@ void initial_AI(){
     for (int i = 0; i < AI_NUM; i++){
         AI[i].color = color[rand()%9];
         AI[i].isEaten = false;
-        AI[i].radius = (int)(rand() % 10 + 2);
+        AI[i].radius = (int)(rand() % 10 + 3);
         
         AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         
         // AI Balls won't over the boarder
-        while(overlapPayer(AI[i])){
+        while(overlapPlayer(AI[i])){
             AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
             AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
         }
@@ -691,7 +691,7 @@ void initial_food(){
         food[i].xLocation = (int)(rand() % RESOLUTION_X);
         food[i].yLocation = (int)(rand() % RESOLUTION_Y);
         
-        while(overlapPayer(AI[i])){
+        while(overlapPlayer(food[i])){
             food[i].xLocation = (int)(rand() % RESOLUTION_X);
             food[i].yLocation = (int)(rand() % RESOLUTION_Y);
         }
@@ -824,7 +824,7 @@ void plot_food(){
             food[i].xLocation = (int)(rand() % RESOLUTION_X);
             food[i].yLocation = (int)(rand() % RESOLUTION_Y);
             
-            while(overlapPayer(AI[i])){
+            while(overlapPlayer(food[i])){
                 food[i].xLocation = (int)(rand() % RESOLUTION_X);
                 food[i].yLocation = (int)(rand() % RESOLUTION_Y);
             }
@@ -840,13 +840,19 @@ void plot_AI(){
       }else{
           AI[i].color = color[rand()%9];   //rand()%256  随机取值 0-255
           AI[i].isEaten = false;
-          AI[i].radius = (int)(rand() % 10 + player.radius - 3);
+          if(player.radius > 30)
+              AI[i].radius = (int)(rand() % 10 + player.radius/2 - 7);
+          else if(player.radius > 5)
+              AI[i].radius = (int)(rand() % 10 + player.radius - 5);
+          else
+              AI[i].radius = (int)(rand() % 6 + player.radius - 3);
+          
 
           AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           
           // AI Balls won't over the boarder
-          while(overlapPayer(AI[i])){
+          while(overlapPlayer(AI[i])){
               AI[i].xLocation = rand() % (RESOLUTION_X - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
               AI[i].yLocation = rand() % (RESOLUTION_Y - (int)(AI[i].radius + 0.5)) + (int)(AI[i].radius + 0.5);
           }
@@ -1028,14 +1034,14 @@ void AI_update(){
 // Function 22: Chase Algorithm
 void AIChase(Ball *chase, Ball *run){
     
-    int N = (chase->radius)/25;
-    double chaseSpeed = 25 / (chase->radius);
-    double runSpeed = 25 / (run->radius);
+    int N = (chase->radius)/30;
+    double chaseSpeed = 21 / (chase->radius);
+    double runSpeed = 21 / (run->radius);
     
     if(chaseSpeed < 1) chaseSpeed = 1;
     if(runSpeed < 1) runSpeed = 1;
     
-    if(rand() % N == 0 || N < 1){
+    if(rand() % N == 0 || (N<1 && rand()%15 == 0)){
         if(rand() % 2 == 0){
             if(chase->xLocation < run->xLocation){
                 chase->xLocation += chaseSpeed;
@@ -1065,6 +1071,7 @@ void AIChase(Ball *chase, Ball *run){
                 }
             }
         }
+        
     }
 }
 
@@ -1084,13 +1091,13 @@ void playerEatFood(){
             
             if(player.xLocation != player.lastXLocation){
                 int midPoint = (player.xLocation + player.lastXLocation) / 2;
-                if((findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 1)) || (findDistanceForPlayer(food[i], midPoint, player.yLocation) < (player.radius + 1)) ){
+                if((findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 3)) || (findDistanceForPlayer(food[i], midPoint, player.yLocation) < (player.radius + 3)) ){
                         food[i].isEaten = true;
                         player.radius += food[i].radius;
                 }
             }else if(player.yLocation != player.lastYLocation){
                 int midPoint = (player.yLocation + player.lastYLocation) / 2;
-                if( (findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 1)) || (findDistanceForPlayer(food[i], player.xLocation, midPoint) < (player.radius + 1)) ){
+                if( (findDistanceForPlayer(food[i], player.xLocation, player.yLocation) < (player.radius + 3)) || (findDistanceForPlayer(food[i], player.xLocation, midPoint) < (player.radius + 3)) ){
                         food[i].isEaten = true;
                         player.radius += food[i].radius;
                 }
@@ -1119,10 +1126,12 @@ void AIEatFood(){
         if (!AI[k].isEaten){
             if (findDistance(AI[i], AI[k]) < AI[k].radius - AI[i].radius/3){
                 AI[i].isEaten = true;
-                AI[k].radius += AI[i].radius / 5;
+                if(AI[k].radius < 50) AI[k].radius += AI[i].radius / 5;
+                else AI[k].radius += AI[i].radius / 5;
           }else if (findDistance(AI[i], AI[k]) < AI[i].radius - AI[k].radius/3){
               AI[k].isEaten = true;
-              AI[i].radius += AI[k].radius / 5;
+              if(AI[i].radius < 50) AI[i].radius += AI[k].radius / 5;
+              else AI[i].radius += AI[k].radius / 10;
           }
         }
       }
@@ -1164,17 +1173,17 @@ void video_text(int x, int y, char * text_ptr) {
         ++offset;
     }
 }
+
 void display_score(){
     char str[20];
     sprintf(str, "%d", player.score);
-    
     char text_top_left_first[40] = "Battle of Balls";
     char text_top_left_second[40] = "Score:\0";
-    char text_bottom_middle[40] = "PRESS SPACE TO PAUSE\0";
+    char text_bottom_middle[100] = "PRESS SPACE TO PAUSE / PRESS DIRECTION KEY TO CONTROL THE BALL\0";
     strcat(text_top_left_second,str);
     video_text(1, 1, text_top_left_first);
     video_text(1, 3, text_top_left_second);
-    video_text(30, 58, text_bottom_middle);
+    video_text(10, 58, text_bottom_middle);
 }
 
 void display_menutext(){
@@ -1263,7 +1272,7 @@ float findDistanceForPlayer(Ball ball1, int xLocation, int yLocation){
 }
 
 // Function 31: the ball is overlap with the player
-bool overlapPayer(Ball ball){
+bool overlapPlayer(Ball ball){
     if(((ball.xLocation - ball.radius) < (player.xLocation + player.radius)) && ((ball.xLocation + ball.radius) > (player.xLocation - player.radius))){
         if(((ball.yLocation - ball.radius) < (player.yLocation + player.radius)) && ((ball.yLocation + ball.radius) > (player.yLocation - player.radius))){
             return true;
