@@ -899,7 +899,7 @@ void plot_circle(Ball ball){
     short int color = ball.color;
     
     int count = 0;
-    int d = 1-r;
+    int d = 3-2*r;
     
     while(r > count){
         draw_line(-count+x, r+y, count+x, r+y, color);
@@ -908,9 +908,9 @@ void plot_circle(Ball ball){
         draw_line(-r+x, -count+y, r+x, -count+y, color);
         
         if(d < 0){
-            d = d + 2*count + 3;
+            d = d + 4*count + 6;
         }else{
-            d = d + 2*(count - r) + 5;
+            d = d + 4*(count - r) + 10;
             r--;
         }
         count++;
@@ -1056,7 +1056,7 @@ void AIChase(Ball *chase, Ball *run){
             }
         }
         
-        if(run->radius != 1 && chase->radius >= 2*(run->radius)){
+        if(run->radius != 1 && chase->radius >= 4*(run->radius)/3){
             if(rand() % 2 == 0){
                 if(chase->xLocation < run->xLocation){
                     run->xLocation -= runSpeed;
@@ -1235,7 +1235,7 @@ void opening(){
     // Draw Circles
     for(int r = RESOLUTION_X/2; r > 5; r--){
         int count = 0;
-        int d = 1-r;
+        int d = 3-2*r;
         
         while(r > count){
             draw_line(-count+x, r+y, count+x, r+y, color);
@@ -1244,9 +1244,9 @@ void opening(){
             draw_line(-r+x, -count+y, r+x, -count+y, color);
             
             if(d < 0){
-                d = d + 2*count + 3;
+                d = d + 4*count + 6;
             }else{
-                d = d + 2*(count - r) + 5;
+                d = d + 4*(count - r) + 10;
                 r--;
             }
             count++;
